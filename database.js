@@ -6,19 +6,12 @@ let mongod = null;
 
 const connectDB = async () => {
     try {
-        let dbUrl = 'mongodb://localhost:27017/testDB';
+        let dbUrl = 'mongodb://127.0.0.1:27017/usersDB';
         if (process.env.NODE_ENV === 'test') {
             mongod = await MongoMemoryServer.create();
             dbUrl = mongod.getUri();
         }
-
-        const conn = await mongoose.connect(dbUrl, {
-            useNewUrlParser: true,
-            useUnifiedTopology: true,
-            useFindAndModify: false,
-        });
-
-        console.log(`MongoDB connected: ${conn.connection.host}`);
+        const conn = await mongoose.connect(dbUrl);
     } catch (err) {
         console.log(err);
         process.exit(1);

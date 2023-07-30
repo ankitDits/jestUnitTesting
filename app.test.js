@@ -1,41 +1,22 @@
-const app = require('./app');
-const request = require('supertest');
+const { app, server } = require('./app');
+const supertest = require('supertest');
 const validations = require('./Validations/user.validation');
 const { default: mongoose } = require('mongoose');
 jest.setTimeout(30000);
+const { connectDB, disconnectDB } = require('./database');
+const request = supertest(app);
+const Controllers = require('./controllers/export')
+let tempUser = {
+    _id: "1",
+    phoneNo: "9876543210",
+    name: 'Test',
+    email: 'test@gmail.com',
+    password: "test@123",
+}
 
-
-
-
-
-// test cases
-describe('testing user routes', () => {
+//***************TESTING VALIDATORS***************/
+describe('Validators', () => {
     {
-
-        test("while user send all required parameters it should save user in the database and return with 200 status code", async () => {
-            let result = await request(app).post('/api/v1/user').send({
-                name: 'ankit',
-                email: 'ankitthakur35892@gmail.com',
-                password: 'Apptunix@5494',
-                phoneNo: '8219945681'
-            })
-            expect(result.status).toBe(200);
-        })
-
-        test("while user don't send all required parameters it should return with status code 400", async () => {
-            let result = await request(app).post('/api/v1/user').send({
-                email: 'ankitthakur35892@gmail.com',
-                password: 'Apptunix@5494',
-                phoneNo: '8219945681'
-            })
-            expect(result.status).toBe(400);
-        })
-
-        test("while user request all users", async () => {
-            let result = await request(app).get('/api/v1/user')
-            expect(result.status).toBe(200)
-        })
-
         test("while user send password as required it should return true", () => {
             let password = "Apptunix@5494";
             let isValidatePassword = validations.passwordValidations(password);
@@ -68,30 +49,66 @@ describe('testing user routes', () => {
     }
 })
 
-// describe('mock database', () => {
-//     let connection;
-//     let db;
 
-//     beforeAll(async () => {
-//         connection = await mongoose.connect("mongodb://localhost/testDB", {
-//             useNewUrlParser: true,
-//             useUnifiedTopology: true,
-//         })
-//         // db = await connection.db("mongodb://localhost/testDB");
-//     })
 
-//     // afterAll(async () => {
-//     //     await connection.close();
-//     // });
+//*****************API TESTING*****************//
+describe('API test', () => {
 
-//     test("should insert user into the database", async () => {
-//         // let users = db.collection('users')
-//         // const mockUser = { _id: 'some-user-id', name: 'John' };
-//         // await users.insertOne(mockUser);
+    beforeAll(async () => {
+        await connectDB();
+    })
 
-//         // const insertedUser = await users.findOne({ _id: 'some-user-id' });
-//         expect(0).toEqual(0);
+    afterAll(async () => {
+        await disconnectDB();
+        // server.close();
+    });
 
-//     })
+    //*******It should create new user and return status as 201*********/
+    it('POST /api/v1/user response status should be 201', async () => {
+        const res = await request.post('/api/v1/user').send(tempUser);
+        expect(res.status).toBe(201);
+    });
 
-// })
+    //*******It should delete all the users in the db*********/
+    it('DELETE /api/v1/user response status should be 204', async () => {
+        const res = await request.delete('/api/v1/user');
+        expect(res.status).toBe(204)
+    })
+
+    //*******It should create new user and return response data as newely created user*********/
+    it('POST /api/v1/user response data should be newly created user', async () => {
+        const res = await request.post('/api/v1/user').send(tempUser);
+        expect(res.body.data).toStrictEqual(tempUser);
+    });
+
+    //*******It should get all users and return status as 200*********/
+    it('GET /api/v1/user', async () => {
+        const res = await request.get("/api/v1/user")
+        expect(res.status).toBe(200)
+    })
+
+
+})
+
+//*****************CONTROLLER TESTING*****************//
+describe('Controller', () => {
+    let req;
+    let res;
+    let next;
+
+    beforeEach(() => {
+        res = { status: jest.fn().mockReturnThis(), send: jest.fn().mockReturnThis(tempUser) };
+        next = jest.fn();
+    })
+    afterEach(() => {
+        jest.resetAllMocks();
+    });
+
+    //*******It should create new user res.status function should be called with 201*********/
+    it("should return created object", async () => {
+        req = { body: tempUser }
+        let response = await Controllers.UserControllers.createUser(req, res, next)
+        expect(response.status).toBeCalledWith(201)
+    })
+
+})

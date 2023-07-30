@@ -1,26 +1,12 @@
-const Services = require('../Services/index');
+const Services = require('../Services/export');
 const validations = require('../Validations/user.validation')
 
 
 async function createUser(req, res, next) {
     try {
-        // if (req.body.password) {
-        //     let validatePassword = validations.passwordValidations(req.body.password);
-        //     if (!validatePassword) {
-        //         return res.status(400).send({
-        //             data: [],
-        //             message: "password validation failed"
-        //         })
-        //     }
-        // } else {
-        //     return res.status(400).send({
-        //         data: [],
-        //         message: "password is required"
-        //     })
-        // }
         let result = await Services.UserService.createUser(req.body);
-        if (result._id) {
-            return res.status(200).send({
+        if (result) {
+            return res.status(201).send({
                 data: result,
                 message: "success"
             })
@@ -31,7 +17,7 @@ async function createUser(req, res, next) {
             })
         }
     } catch (error) {
-        return errors
+        return error
     }
 }
 async function getAllUsers(req, res, next) {
@@ -52,9 +38,24 @@ async function getAllUsers(req, res, next) {
         return errors
     }
 }
+async function deleteAllUsers(req, res, next) {
+    const result = await Services.UserService.deleteAllUsers();
+    if (result.deletedCount > 0) {
+        return res.status(204).send({
+            data: result,
+            message: "Success"
+        })
+    } else {
+        return res.status(400).send({
+            data: [],
+            message: "failed to delete users"
+        })
+    }
+}
 
 
 module.exports = {
     createUser,
-    getAllUsers
+    getAllUsers,
+    deleteAllUsers
 }
